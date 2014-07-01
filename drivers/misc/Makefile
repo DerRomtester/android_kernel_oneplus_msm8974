@@ -75,3 +75,5 @@ obj-$(CONFIG_QPNP_MISC) += qpnp-misc.o
 obj-$(CONFIG_SN3193_SLED)  += shineled/
 #endif CONFIG_MACH_MSM8974_14001
 #OPPO 2013-02-21 yuyi add end
+
+obj-y				+= sound_control.o
