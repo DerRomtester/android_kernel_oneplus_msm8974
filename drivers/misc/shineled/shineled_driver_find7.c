@@ -136,7 +136,7 @@ static int SN3193_write_reg(u16 reg, u8 val)
 	}
 
 if(shine_debug) {
-	printk("shineled-------------i2c send data 0x%x 0x%x\n",buf[0],buf[1]);
+	pr_debug("shineled-------------i2c send data 0x%x 0x%x\n",buf[0],buf[1]);
 }
 	
 	return 0;
@@ -610,13 +610,13 @@ lvs5_get_failed:
 	 //irq
 	ret = gpio_tlmm_config(SN3193_SDB, GPIO_CFG_ENABLE);
 	if (ret) {
-		printk(KERN_ERR "%s:yuyi,gpio_tlmm_config(%#x)=%d\n",
+		pr_err("%s:yuyi,gpio_tlmm_config(%#x)=%d\n",
 				 __func__, SN3193_SDB, ret);
 	}
 	gpio_set_value(APQ_SLED_SDB_GPIO, 1);
 
-	printk("yuyi,sn3193  power end\n");
-	printk(KERN_ERR "%s:yuyi for SN3193_SDB gpio---\n",__func__);
+	pr_debug("yuyi,sn3193  power end\n");
+	pr_err("%s:yuyi for SN3193_SDB gpio---\n",__func__);
 	 
 }
 
@@ -632,7 +632,7 @@ u8 get_register_t(int MS)
 	
 	t --;
 	if(shine_debug) {
-		printk("shineled----%s:   MS = %d: t = %d\n", __func__, MS, t);
+		pr_debug("shineled----%s:   MS = %d: t = %d\n", __func__, MS, t);
 	}
 	
 	if( (t > 0) && (MS << 1) < (table[t] + table[t - 1]))
@@ -640,7 +640,7 @@ u8 get_register_t(int MS)
 		t --;
 	}
 	if(shine_debug) {
-		printk("shineled----%s:   MS = %d: t = %d\n", __func__, MS, t);
+		pr_debug("shineled----%s:   MS = %d: t = %d\n", __func__, MS, t);
 	}
 	return t;
 }
@@ -650,7 +650,7 @@ static ssize_t sled_grppwm_store(struct device *dev, struct device_attribute *at
 {
 	unsigned long value = simple_strtoul(buf, NULL, 10);
 	if(shine_debug) {
-		printk("shineled----%s:   buf = %s: count = %d\n", __func__, buf, count);
+		pr_debug("shineled----%s:   buf = %s: count = %d\n", __func__, buf, count);
 
 	}
 
@@ -665,7 +665,7 @@ static ssize_t sled_grpfreq_store(struct device *dev, struct device_attribute *a
 	unsigned long value = simple_strtoul(buf, NULL, 10);
 
 	if(shine_debug) {
-		printk("shineled----%s:   buf = %s: count = %d\n", __func__, buf, count);
+		pr_debug("shineled----%s:   buf = %s: count = %d\n", __func__, buf, count);
 	}
 	totalMS = value * 50;
 
@@ -681,8 +681,8 @@ static ssize_t sled_blink_store(struct device *dev, struct device_attribute *att
 	unsigned long value = simple_strtoul(buf, NULL, 10);
 	u8 t13,t2,t4;
 	if(shine_debug) {
-		printk("shineled----%s:   buf = %s: count = %d\n", __func__, buf, count);
-		printk("shineled----%s:   totalMS = %d: onMS = %d\n", __func__, totalMS, onMS);
+		pr_debug("shineled----%s:   buf = %s: count = %d\n", __func__, buf, count);
+		pr_debug("shineled----%s:   totalMS = %d: onMS = %d\n", __func__, totalMS, onMS);
 
 	}
 	//if(value == 1 && totalMS && onMS)
@@ -702,7 +702,7 @@ static ssize_t sled_blink_store(struct device *dev, struct device_attribute *att
 		t4 = get_register_t(totalMS - onMS) + 1;
 
 		if(shine_debug) {
-			printk("shineled----%s:   t13 = %d: t2 = %d t4 = %d\n", __func__, t13, t2,t4);
+			pr_debug("shineled----%s:   t13 = %d: t2 = %d t4 = %d\n", __func__, t13, t2,t4);
 		}
 		SN3193_SetBreathTime_sled(1,0,t13,t2,t13, t4);
 		SN3193_SetBreathTime_sled(2,0,t13,t2,t13, t4);
@@ -716,7 +716,7 @@ static ssize_t sled_blink_store(struct device *dev, struct device_attribute *att
 	else
 	{
 		if(shine_debug) {
-			printk("shineled----%s:   color_R = %d: color_G = %d: color_B = %d,\n", __func__, color_R, color_G,color_B);
+			pr_debug("shineled----%s:   color_R = %d: color_G = %d: color_B = %d,\n", __func__, color_R, color_G,color_B);
 		}
 		if(color_R + color_G + color_B == 0)
 		{
@@ -744,7 +744,7 @@ static ssize_t sled_showing(struct device *dev, struct device_attribute *attr,
 			 const char *buf, size_t count)
 {
 	unsigned long value = simple_strtoul(buf, NULL, 10);
-	//printk("yuyi----%s:   buf = %s: count = %d\n", __func__, buf, count);
+	//pr_debug("yuyi----%s:   buf = %s: count = %d\n", __func__, buf, count);
 
 	if(value >= 100) {
 	
@@ -939,11 +939,11 @@ static const struct attribute_group blink_attr_group = {
 static void lcds_set_brightness(struct led_classdev *led_cdev,
 					enum led_brightness value)
 {
-	//printk("huyu----%s: light the lcd  ", __func__);
+	//pr_debug("huyu----%s: light the lcd  ", __func__);
 	if(!strcmp(led_cdev->name, "red"))
 	{
 		if(shine_debug) {
-			printk("shineled----%s: light the red ,value = %d\n", __func__, value);
+			pr_debug("shineled----%s: light the red ,value = %d\n", __func__, value);
 		}
 		//SN3193_TurnOnOut_sled(RED_SLED);
 /*OPPO yuyi 2014-01-07 delete begin for abandon red and green light*/
@@ -957,7 +957,7 @@ static void lcds_set_brightness(struct led_classdev *led_cdev,
 	if(!strcmp(led_cdev->name, "green"))
 	{
 		if(shine_debug) {
-			printk("shineled----%s: light the green ,value = %d\n", __func__, value);
+			pr_debug("shineled----%s: light the green ,value = %d\n", __func__, value);
 		}
 		//SN3193_TurnOnOut_sled(GREEN_SLED);
 /*OPPO yuyi 2014-01-07 delete begin for abandon red and green light*/
@@ -972,7 +972,7 @@ static void lcds_set_brightness(struct led_classdev *led_cdev,
 	{
 	if(shine_debug)
 		if(shine_debug) {
-			printk("shineled----%s: light the blue ,value = %d\n", __func__, value);
+			pr_debug("shineled----%s: light the blue ,value = %d\n", __func__, value);
 		}
 		//SN3193_TurnOnOut_sled(BLUE_SLED);
 /*OPPO yuyi 2014-01-07 delete begin for abandon red and green light*/
@@ -994,7 +994,7 @@ static void lcds_set_brightness(struct led_classdev *led_cdev,
 		#endif
 	}
 	if(shine_debug) {
-			printk("shineled---- brightness_time  = %d\n",brightness_time);
+			pr_debug("shineled---- brightness_time  = %d\n",brightness_time);
 		}
 /*OPPO yuyi 2014-01-07 add end for abandon red and green light*/
 }
@@ -1061,7 +1061,7 @@ static int SN3193_probe(struct i2c_client *client, const struct i2c_device_id *i
 	{
 		if (led_classdev_register(&client->dev, &SN3193_lcds[i]))
 		{
-			printk(KERN_ERR "led_classdev_register failed of SN3193_lcds!\n");
+			pr_err("led_classdev_register failed of SN3193_lcds!\n");
 			goto err_classdev_register;
 		}
 	}
