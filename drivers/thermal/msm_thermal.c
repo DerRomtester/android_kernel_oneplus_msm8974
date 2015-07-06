@@ -51,7 +51,7 @@
 #define MAX_EFUSE_VALUE  16
 #define THERM_SECURE_BITE_CMD 8
 
-unsigned int temp_threshold = 70;
+unsigned int temp_threshold = 65;
 module_param(temp_threshold, int, 0755);
 
 static struct msm_thermal_data msm_thermal_info;
