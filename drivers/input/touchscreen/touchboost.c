@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2013-2014, Francisco Franco. All rights reserved.
+ * Copyright (c) 2013-2015, Francisco Franco. All rights reserved.
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 and
@@ -21,8 +21,6 @@
 #include <linux/time.h>
 #include <linux/slab.h>
 
-#define MIN_TIME_INTERVAL_US (50 * USEC_PER_MSEC)
-
 struct touchboost_inputopen {
 	struct input_handle *handle;
 	struct work_struct inputopen_work;
@@ -35,7 +33,7 @@ struct touchboost_inputopen {
  */
 static u64 last_input_time = 0;
 
-static inline u64 get_input_time(void)
+u64 get_input_time(void)
 {
 	return last_input_time;
 }
@@ -43,16 +41,8 @@ static inline u64 get_input_time(void)
 static void boost_input_event(struct input_handle *handle,
                 unsigned int type, unsigned int code, int value)
 {
-	u64 now;
-
-	if ((type == EV_ABS)) {
-		now = ktime_to_us(ktime_get());
-
-		if (now - last_input_time < MIN_TIME_INTERVAL_US)
-			return;
-
+	if ((type == EV_ABS))
 		last_input_time = ktime_to_us(ktime_get());
-	}
 }
 
 static int boost_input_connect(struct input_handler *handler,
