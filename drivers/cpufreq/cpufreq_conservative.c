@@ -23,6 +23,7 @@
 #include <linux/tick.h>
 #include <linux/ktime.h>
 #include <linux/sched.h>
+#include <linux/touchboost.h>
 
 /*
  * dbs is used in this file as a shortform for demandbased switching
@@ -54,6 +55,9 @@ static unsigned int min_sampling_rate;
 #define DEF_SAMPLING_DOWN_FACTOR		(1)
 #define MAX_SAMPLING_DOWN_FACTOR		(10)
 #define TRANSITION_LATENCY_LIMIT		(10 * 1000 * 1000)
+#define MICRO_FREQUENCY_MIN_SAMPLE_RATE	(10000)
+#define BOOST_DURATION_US			(40000)
+#define BOOST_FREQ_VAL				(1497600)
 
 static void do_dbs_timer(struct work_struct *work);
 
@@ -92,6 +96,8 @@ static struct dbs_tuners {
 	unsigned int ignore_nice;
 	unsigned int freq_step;
 	unsigned int freq_down_step;
+	unsigned int input_boost_freq;
+	unsigned int input_boost_duration;
 } dbs_tuners_ins = {
 	.up_threshold = DEF_FREQUENCY_UP_THRESHOLD,
 	.down_threshold = DEF_FREQUENCY_DOWN_THRESHOLD,
@@ -99,6 +105,8 @@ static struct dbs_tuners {
 	.ignore_nice = 0,
 	.freq_step = 5,
 	.freq_down_step = 10,
+	.input_boost_freq = BOOST_FREQ_VAL,
+	.input_boost_duration = BOOST_DURATION_US,
 };
 
 /* keep track of frequency transitions */
@@ -156,6 +164,8 @@ show_one(down_threshold, down_threshold);
 show_one(ignore_nice_load, ignore_nice);
 show_one(freq_step, freq_step);
 show_one(freq_down_step, freq_down_step);
+show_one(input_boost_freq, input_boost_freq);
+show_one(input_boost_duration, input_boost_duration);
 
 static ssize_t store_sampling_down_factor(struct kobject *a,
 					  struct attribute *b,
@@ -242,7 +252,7 @@ static ssize_t store_ignore_nice_load(struct kobject *a, struct attribute *b,
 		struct cpu_dbs_info_s *dbs_info;
 		dbs_info = &per_cpu(cs_cpu_dbs_info, j);
 		dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
-						&dbs_info->prev_cpu_wall, 0);
+						&dbs_info->prev_cpu_wall, true);
 		if (dbs_tuners_ins.ignore_nice)
 			dbs_info->prev_cpu_nice = kcpustat_cpu(j).cpustat[CPUTIME_NICE];
 	}
@@ -287,6 +297,39 @@ static ssize_t store_freq_down_step(struct kobject *a, struct attribute *b,
 	return count;
 }
 
+static ssize_t store_input_boost_freq(struct kobject *a, struct attribute *b,
+                               const char *buf, size_t count)
+{
+        unsigned int input;
+        int ret;
+        ret = sscanf(buf, "%u", &input);
+
+        if (ret != 1)
+                return -EINVAL;
+
+        if (input < 0)
+                input = 0;
+
+        dbs_tuners_ins.input_boost_freq = input;
+        return count;
+}
+
+static ssize_t store_input_boost_duration(struct kobject *a, struct attribute *b,
+                               const char *buf, size_t count)
+{
+        unsigned int input;
+        int ret;
+        ret = sscanf(buf, "%u", &input);
+
+        if (ret != 1)
+                return -EINVAL;
+        if (input < 0)
+                input = 0;
+
+        dbs_tuners_ins.input_boost_duration = input;
+        return count;
+}
+
 define_one_global_rw(sampling_rate);
 define_one_global_rw(sampling_down_factor);
 define_one_global_rw(up_threshold);
@@ -294,6 +337,8 @@ define_one_global_rw(down_threshold);
 define_one_global_rw(ignore_nice_load);
 define_one_global_rw(freq_step);
 define_one_global_rw(freq_down_step);
+define_one_global_rw(input_boost_freq);
++efine_one_global_rw(input_boost_duration);
 
 static struct attribute *dbs_attributes[] = {
 	&sampling_rate_min.attr,
@@ -304,6 +349,8 @@ static struct attribute *dbs_attributes[] = {
 	&ignore_nice_load.attr,
 	&freq_step.attr,
 	&freq_down_step.attr,
+	&input_boost_freq.attr,
+	&input_boost_duration.attr,
 	NULL
 };
 
@@ -322,8 +369,12 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 	struct cpufreq_policy *policy;
 	unsigned int j;
+	bool boosted;
+	u64 now;
 
 	policy = this_dbs_info->cur_policy;
+	now = ktime_to_us(ktime_get());
+	boosted = now < (get_input_time() + dbs_tuners_ins.input_boost_duration);
 
 	/*
 	 * Every sampling_rate, we check, if current idle time is less
@@ -344,7 +395,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 
 		j_dbs_info = &per_cpu(cs_cpu_dbs_info, j);
 
-		cur_idle_time = get_cpu_idle_time(j, &cur_wall_time, 0);
+		cur_idle_time = get_cpu_idle_time(j, &cur_wall_time, true);
 
 		wall_time = (unsigned int)
 			(cur_wall_time - j_dbs_info->prev_cpu_wall);
@@ -380,6 +431,8 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			max_load = load;
 	}
 
+	cpufreq_notify_utilization(policy, max_load);
+
 	/* Check for frequency increase */
 	if (max_load > dbs_tuners_ins.up_threshold) {
 
@@ -401,6 +454,12 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 			freq_target = 5;
 
 		this_dbs_info->requested_freq += freq_target;
+
+		if (boosted)
+			this_dbs_info->requested_freq
+				= max(dbs_tuners_ins.input_boost_freq,
+					this_dbs_info->requested_freq);
+
 		if (this_dbs_info->requested_freq > policy->max)
 			this_dbs_info->requested_freq = policy->max;
 
@@ -421,7 +480,7 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 	 * can support the current CPU usage without triggering the up
 	 * policy. To be safe, we focus 10 points under the threshold.
 	 */
-	if (max_load < (dbs_tuners_ins.down_threshold - 10)) {
+	if (max_load < (dbs_tuners_ins.down_threshold)) {
 		freq_target =
 		    (dbs_tuners_ins.freq_down_step * policy->max) / 100;
 
@@ -434,6 +493,11 @@ static void dbs_check_cpu(struct cpu_dbs_info_s *this_dbs_info)
 		 */
 		if (policy->cur == policy->min)
 			return;
+
+		if (boosted)
+                        this_dbs_info->requested_freq
+                                = max(dbs_tuners_ins.input_boost_freq,
+                                        this_dbs_info->requested_freq);
 
 		__cpufreq_driver_target(policy, this_dbs_info->requested_freq,
 				CPUFREQ_RELATION_H);
@@ -500,7 +564,7 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			j_dbs_info->cur_policy = policy;
 
 			j_dbs_info->prev_cpu_idle = get_cpu_idle_time(j,
-						&j_dbs_info->prev_cpu_wall, 0);
+						&j_dbs_info->prev_cpu_wall, true);
 			if (dbs_tuners_ins.ignore_nice)
 				j_dbs_info->prev_cpu_nice =
 						kcpustat_cpu(j).cpustat[CPUTIME_NICE];
@@ -528,11 +592,8 @@ static int cpufreq_governor_dbs(struct cpufreq_policy *policy,
 			}
 
 			/* Bring kernel and HW constraints together */
-			min_sampling_rate = max(min_sampling_rate,
-					MIN_LATENCY_MULTIPLIER * latency);
-			dbs_tuners_ins.sampling_rate =
-				max(min_sampling_rate,
-				    latency * LATENCY_MULTIPLIER);
+			min_sampling_rate = MICRO_FREQUENCY_MIN_SAMPLE_RATE;
+			dbs_tuners_ins.sampling_rate = MICRO_FREQUENCY_MIN_SAMPLE_RATE;
 
 			cpufreq_register_notifier(
 					&dbs_cpufreq_notifier_block,
