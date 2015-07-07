@@ -338,7 +338,7 @@ define_one_global_rw(ignore_nice_load);
 define_one_global_rw(freq_step);
 define_one_global_rw(freq_down_step);
 define_one_global_rw(input_boost_freq);
-+efine_one_global_rw(input_boost_duration);
+define_one_global_rw(input_boost_duration);
 
 static struct attribute *dbs_attributes[] = {
 	&sampling_rate_min.attr,
