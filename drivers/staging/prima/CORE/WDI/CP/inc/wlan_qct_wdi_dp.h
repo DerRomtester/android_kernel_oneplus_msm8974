@@ -122,6 +122,10 @@ when        who    what, where, why
 #define HAL_TDLS_PEER_STA_MASK              0x80 //bit 7 set for TDLS peer station
 #endif
 
+#define WDI_USE_BD_RATE_1_MASK            0x1000
+#define WDI_USE_BD_RATE_2_MASK            0x2000
+#define WDI_USE_BD_RATE_3_MASK            0x4000
+
 /* Bit 8 is used to route reliable multicast data frames from QID 1.
    This dynamically changes ACK_POLICY = TRUE for multicast frames */
 #define WDI_RELIABLE_MCAST_REQUESTED_MASK 0x100

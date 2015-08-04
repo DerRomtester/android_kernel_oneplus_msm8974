@@ -5030,3 +5030,15 @@ HAL
 0    12288    0
 *
 *
+
+* Toggle ARP packet
+*
+WNI_CFG_TOGGLE_ARP_BDRATES I 4 7
+V    RW    NP
+NONE
+0    1    0
+V    RW    NP
+NONE
+0    1    0
+*
+*
