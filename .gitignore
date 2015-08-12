@@ -64,6 +64,7 @@ include/config
 include/linux/version.h
 include/generated
 arch/*/include/generated
+kernel/hz.bc
 
 # stgit generated dirs
 patches-*
