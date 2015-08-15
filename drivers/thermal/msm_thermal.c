@@ -24,9 +24,11 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 
+/* throttle CPU when temperature reaches 45°C*/
 unsigned int temp_threshold = 45;
 module_param(temp_threshold, int, 0644);
 
+/* check every 0.5 seconds for the CPU temperature */
 unsigned int temp_scan_interval = 500;
 module_param(temp_scan_interval, int, 0644);
 
@@ -117,6 +119,13 @@ static void check_temp(struct work_struct *work)
 
 	qpnp_vadc_read(vadc_dev, adc_chan, &result);
 	temp = result.physical;
+
+
+	/* Limit the range from temp_threshold users can set to prevent any damage or weird behavior */
+	if (temp_threshold >= 65)
+		temp_threshold = 65;
+	else if (temp_threshold <= 35)
+		temp_threshold = 35;
 
 	if (info.throttling)
 	{
