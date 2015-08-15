@@ -17,7 +17,6 @@
 #include <linux/module.h>
 #include <linux/mutex.h>
 #include <linux/cpu.h>
-#include <linux/err.h>
 #include <linux/cpufreq.h>
 #include <linux/qpnp/qpnp-adc.h>
 #include <linux/msm_thermal.h>
@@ -120,13 +119,6 @@ static void check_temp(struct work_struct *work)
 	qpnp_vadc_read(vadc_dev, adc_chan, &result);
 	temp = result.physical;
 
-
-	/* Limit the range from temp_threshold users can set to prevent any damage or weird behavior */
-	if (temp_threshold >= 55)
-		temp_threshold = 55;
-	else if (temp_threshold <= 30)
-		temp_threshold = 30;
-
 	if (info.throttling)
 	{
 		if (temp < (temp_threshold - info.safe_diff))
@@ -167,8 +159,7 @@ static int msm_thermal_dev_probe(struct platform_device *pdev)
 
 	ret = of_property_read_u32(np, "qcom,adc-channel", &adc_chan);
 	if (ret) {
-		pr_err("ADC-channel property missing\n");
-		goto err;
+		return ret;
 	}
 
 	cpufreq_register_notifier(&msm_thermal_cpufreq_notifier,
@@ -176,7 +167,7 @@ static int msm_thermal_dev_probe(struct platform_device *pdev)
 
 	INIT_DELAYED_WORK(&check_temp_work, check_temp);
         schedule_delayed_work_on(0, &check_temp_work, 5);
-err:
+
 	return ret;
 }
 
