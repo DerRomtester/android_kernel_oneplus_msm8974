@@ -24,8 +24,8 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 
-/* throttle CPU when temperature reaches 45°C*/
-unsigned int temp_threshold = 45;
+/* throttle CPU when temperature reaches 43°C*/
+unsigned int temp_threshold = 43;
 module_param(temp_threshold, int, 0644);
 
 /* check every 0.5 seconds for the CPU temperature */
