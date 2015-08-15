@@ -122,10 +122,10 @@ static void check_temp(struct work_struct *work)
 
 
 	/* Limit the range from temp_threshold users can set to prevent any damage or weird behavior */
-	if (temp_threshold >= 65)
-		temp_threshold = 65;
-	else if (temp_threshold <= 35)
-		temp_threshold = 35;
+	if (temp_threshold >= 55)
+		temp_threshold = 55;
+	else if (temp_threshold <= 30)
+		temp_threshold = 30;
 
 	if (info.throttling)
 	{
