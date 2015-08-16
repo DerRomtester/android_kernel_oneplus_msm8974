@@ -23,8 +23,8 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 
-/* throttle CPU when temperature reaches 43°C*/
-unsigned int temp_threshold = 43;
+/* throttle CPU when temperature reaches 44°C*/
+unsigned int temp_threshold = 44;
 module_param(temp_threshold, int, 0644);
 
 /* check every 0.5 seconds for the CPU temperature */
@@ -118,6 +118,12 @@ static void check_temp(struct work_struct *work)
 
 	qpnp_vadc_read(vadc_dev, adc_chan, &result);
 	temp = result.physical;
+
+	/* Limit temp threshold to a max value to prevent users damaging their phone*/
+	if (temp_threshold >= 55)
+	{
+		temp_threshold = 55;
+	}
 
 	if (info.throttling)
 	{
