@@ -39,14 +39,20 @@ void __aeabi_memset(void *s, size_t n, int c)
 }
 EXPORT_SYMBOL(__aeabi_memset);
 
-void __aeabi_memclr8(void *s, size_t n)
+void __aeabi_memclr(void *dest, size_t n)
 {
-	(void)memset(s, 0, n);
+	(void)memset(dest, 0, n);
 }
-EXPORT_SYMBOL(__aeabi_memclr8);
+EXPORT_SYMBOL(__aeabi_memclr);
 
-void __aeabi_memclr4(void *s, size_t n)
+void __aeabi_memclr4(void *dest, size_t n)
 {
-    (void)memset(s, 0, n);
+	(void)memset(dest, 0, n);
 }
 EXPORT_SYMBOL(__aeabi_memclr4);
+
+void __aeabi_memclr8(void *dest, size_t n)
+{
+	(void)memset(dest, 0, n);
+}
+EXPORT_SYMBOL(__aeabi_memclr8);
