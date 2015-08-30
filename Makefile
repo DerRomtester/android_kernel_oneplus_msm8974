@@ -386,8 +386,7 @@ KBUILD_CPPFLAGS := -D__KERNEL__
 KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
 		   -fno-strict-aliasing -fno-common \
 		   -Werror-implicit-function-declaration \
-		   -Wno-format-security $(CLANG_FLAGS) \
-		   $(call cc-option,-fno-delete-null-pointer-checks,)
+		   -Wno-format-security $(CLANG_FLAGS)
 
 KBUILD_AFLAGS_KERNEL :=
 KBUILD_CFLAGS_KERNEL :=
@@ -579,8 +578,6 @@ endif # $(dot-config)
 all: vmlinux
 
 include $(srctree)/arch/$(SRCARCH)/Makefile
-
-KBUILD_CFLAGS	+= $(call cc-option,-fno-delete-null-pointer-checks,)
 
 ifdef CONFIG_CC_OPTIMIZE_FOR_SIZE
 KBUILD_CFLAGS	+= $(call cc-option,-Oz,-Os)
