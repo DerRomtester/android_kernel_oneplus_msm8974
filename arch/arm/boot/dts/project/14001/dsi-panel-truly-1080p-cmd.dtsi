@@ -32,6 +32,9 @@
 		qcom,mdss-dsi-v-back-porch = <6>;
 		qcom,mdss-dsi-v-front-porch = <8>;
 		qcom,mdss-dsi-v-pulse-width = <2>;
+		qcom,mdss-dsi-on-pre-reset-delay = <20>;
+		qcom,mdss-dsi-off-pre-reset-delay = <20>;
+		qcom,mdss-dsi-off-post-reset-delay = <20>;
 		qcom,mdss-dsi-bpp = <24>;
 		qcom,mdss-dsi-underflow-color = <0x00>;
 		qcom,mdss-dsi-panel-timings = [
