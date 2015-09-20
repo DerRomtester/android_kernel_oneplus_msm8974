@@ -3057,6 +3057,12 @@ config SPEED_LEVEL_INTERFACE
         help
          Allow SPEED level to be shown into specific kernel apps
 
+config INTELLI_HOTPLUG
+	bool "Enable intelli-plug cpu hotplug driver"
+	default y
+	help
+	  Generic Intelli-plug cpu hotplug driver for ARM SOCs
+
 endif
 
 config KERNEL_TEXT_MPU_PROT
