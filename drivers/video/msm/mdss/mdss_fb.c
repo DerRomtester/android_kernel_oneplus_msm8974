@@ -1124,9 +1124,6 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 	u32 temp;
 	bool bl_notify = false;
 
-	if (fb_unblank != FB_UNBLANK_NO_BL_DELAY)
-		return;
-
 	if (mfd->unset_bl_level) {
 		mutex_lock(&mfd->bl_lock);
 		if (!mfd->bl_updated) {
@@ -1146,77 +1143,6 @@ void mdss_fb_update_backlight(struct msm_fb_data_type *mfd)
 		}
 		mutex_unlock(&mfd->bl_lock);
 	}
-}
-
-static int mdss_fb_start_disp_thread(struct msm_fb_data_type *mfd)
-{
-	int ret = 0;
-
-	pr_debug("%pS: start display thread fb%d\n",
-		__builtin_return_address(0), mfd->index);
-
-	atomic_set(&mfd->commits_pending, 0);
-	mfd->disp_thread = kthread_run(__mdss_fb_display_thread,
-				mfd, "mdss_fb%d", mfd->index);
-
-	if (IS_ERR(mfd->disp_thread)) {
-		pr_err("ERROR: unable to start display thread %d\n",
-				mfd->index);
-		ret = PTR_ERR(mfd->disp_thread);
-		mfd->disp_thread = NULL;
-	}
-
-	return ret;
-}
-
-static void mdss_fb_stop_disp_thread(struct msm_fb_data_type *mfd)
-{
-	pr_debug("%pS: stop display thread fb%d\n",
-		__builtin_return_address(0), mfd->index);
-
-	kthread_stop(mfd->disp_thread);
-	mfd->disp_thread = NULL;
-}
-
-static int mdss_fb_unblank_sub(struct msm_fb_data_type *mfd)
-{
-	int ret = 0;
-	int cur_power_state;
-
-	if (!mfd)
-		return -EINVAL;
-
-	/* Start Display thread */
-	if (mfd->disp_thread == NULL) {
-		ret = mdss_fb_start_disp_thread(mfd);
-		if (IS_ERR_VALUE(ret))
-			return ret;
-	}
-
-	cur_power_state = mfd->panel_power_state;
-	if (!mdss_panel_is_power_on_interactive(cur_power_state) &&
-		mfd->mdp.on_fnc) {
-		ret = mfd->mdp.on_fnc(mfd);
-		if (ret == 0) {
-			mfd->panel_power_state = MDSS_PANEL_POWER_ON;
-			mfd->panel_info->panel_dead = false;
-		} else if (mfd->disp_thread) {
-			mdss_fb_stop_disp_thread(mfd);
-			goto error;
-		}
-		mutex_lock(&mfd->update.lock);
-		mfd->update.type = NOTIFY_TYPE_UPDATE;
-		mfd->update.is_suspend = 0;
-		mutex_unlock(&mfd->update.lock);
-
-		/* Start the work thread to signal idle time */
-		if (mfd->idle_time)
-			schedule_delayed_work(&mfd->idle_notify_work,
-				msecs_to_jiffies(mfd->idle_time));
-	}
-
-error:
-	return ret;
 }
 
 static int mdss_fb_blank_sub(int blank_mode, struct fb_info *info,

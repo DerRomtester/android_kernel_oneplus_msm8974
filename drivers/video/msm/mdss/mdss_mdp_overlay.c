@@ -1321,7 +1321,6 @@ commit_fail:
 		mutex_unlock(ctl->wb_lock);
 		mutex_unlock(ctl->shared_lock);
 	}
-
 	ATRACE_END(__func__);
 
 	return ret;
