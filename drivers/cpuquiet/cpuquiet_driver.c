@@ -31,7 +31,7 @@ static struct work_struct minmax_work;
 static struct work_struct cpu_core_state_work;
 static struct kobject *auto_sysfs_kobject;
 
-static bool enabled = false;
+static bool enabled = true;
 static bool manual_hotplug = false;
 // core 0 is always active
 unsigned int cpu_core_state[3] = {0, 0, 0};
