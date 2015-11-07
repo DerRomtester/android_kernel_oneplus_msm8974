@@ -152,7 +152,8 @@ extern long join_session_keyring(const char *name);
 extern struct work_struct key_gc_work;
 extern unsigned key_gc_delay;
 extern void keyring_gc(struct key *keyring, time_t limit);
-extern void key_schedule_gc(time_t expiry_at);
+extern void key_schedule_gc(time_t gc_at);
+extern void key_schedule_gc_links(void);
 extern void key_gc_keytype(struct key_type *ktype);
 
 extern int key_task_permission(const key_ref_t key_ref,
@@ -174,7 +175,8 @@ static inline int key_permission(const key_ref_t key_ref, key_perm_t perm)
 #define	KEY_SEARCH	0x08	/* require permission to search (keyring) or find (key) */
 #define	KEY_LINK	0x10	/* require permission to link */
 #define	KEY_SETATTR	0x20	/* require permission to change attributes */
-#define	KEY_ALL		0x3f	/* all the above permissions */
+#define	KEY_INVAL	0x40	/* require permission to invalidate a key */
+#define	KEY_ALL		0x7f	/* all the above permissions */
 
 /*
  * Authorisation record for request_key().
@@ -195,6 +197,17 @@ extern struct key *request_key_auth_new(struct key *target,
 					struct key *dest_keyring);
 
 extern struct key *key_get_instantiation_authkey(key_serial_t target_id);
+
+/*
+ * Determine whether a key is dead.
+ */
+static inline bool key_is_dead(struct key *key, time_t limit)
+{
+	return
+		key->flags & ((1 << KEY_FLAG_DEAD) |
+			      (1 << KEY_FLAG_INVALIDATED)) ||
+		(key->expiry > 0 && key->expiry <= limit);
+}
 
 /*
  * keyctl() functions
@@ -225,6 +238,7 @@ extern long keyctl_reject_key(key_serial_t, unsigned, unsigned, key_serial_t);
 extern long keyctl_instantiate_key_iov(key_serial_t,
 				       const struct iovec __user *,
 				       unsigned, key_serial_t);
+extern long keyctl_invalidate_key(key_serial_t);
 
 extern long keyctl_instantiate_key_common(key_serial_t,
 					  const struct iovec __user *,
