@@ -274,14 +274,12 @@ process_inline:
 	if (f2fs_has_inline_data(inode)) {
 		ipage = get_node_page(sbi, inode->i_ino);
 		f2fs_bug_on(sbi, IS_ERR(ipage));
-		if (!truncate_inline_inode(ipage, 0))
-			return false;
+		truncate_inline_inode(ipage, 0);
 		f2fs_clear_inline_inode(inode);
 		update_inode(inode, ipage);
 		f2fs_put_page(ipage, 1);
 	} else if (ri && (ri->i_inline & F2FS_INLINE_DATA)) {
-		if (truncate_blocks(inode, 0, false))
-			return false;
+		truncate_blocks(inode, 0, false);
 		goto process_inline;
 	}
 	return false;
