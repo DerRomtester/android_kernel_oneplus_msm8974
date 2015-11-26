@@ -53,7 +53,7 @@ static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
 	if (err) {
 		err = -EINVAL;
 		nid_free = true;
-		goto fail;
+		goto out;
 	}
 
 	/* If the directory encrypted, then we should encrypt the inode. */
@@ -75,6 +75,9 @@ static struct inode *f2fs_new_inode(struct inode *dir, umode_t mode)
 	mark_inode_dirty(inode);
 	return inode;
 
+out:
+	clear_nlink(inode);
+	unlock_new_inode(inode);
 fail:
 	trace_f2fs_new_inode(inode, err);
 	make_bad_inode(inode);
