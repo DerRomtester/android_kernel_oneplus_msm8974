@@ -63,6 +63,9 @@ include/config
 include/linux/version.h
 include/generated
 arch/*/include/generated
+arch/arm/crypto/sha256-core.S
+arch/arm/boot/compressed/piggy.lz4
+kernel/hz.bc
 
 # stgit generated dirs
 patches-*
