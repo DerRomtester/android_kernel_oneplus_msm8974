@@ -42,8 +42,8 @@ config WLAN_FEATURE_11W
 	default n
 
 config QCOM_TDLS
-	bool "Enable Tunneled Direct Link Setup feature"
-	default n
+       bool "Enable Tunneled Direct Link Setup feature"
+       default n
 
 config QCOM_VOWIFI_11R
 	bool "Enable Fast Transition (11r) feature"
