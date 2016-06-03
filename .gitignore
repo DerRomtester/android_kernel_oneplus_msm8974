@@ -32,6 +32,7 @@ modules.builtin
 *.lzo
 *.patch
 *.gcno
+*.lz4
 
 #
 # Top-level generic files
@@ -87,3 +88,5 @@ GTAGS
 
 # Generated source files
 smd_rpc_sym.c
+hz.bc
+sha256-core.S
