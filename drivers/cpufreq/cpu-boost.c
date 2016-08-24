@@ -167,6 +167,7 @@ static int boost_adjust_notify(struct notifier_block *nb, unsigned long val, voi
 
 static struct notifier_block boost_adjust_nb = {
 	.notifier_call = boost_adjust_notify,
+	.priority	= INT_MAX,
 };
 
 static void do_boost_rem(struct work_struct *work)
@@ -313,6 +314,7 @@ static int boost_migration_notify(struct notifier_block *nb,
 
 static struct notifier_block boost_migration_nb = {
 	.notifier_call = boost_migration_notify,
+	.priority	= INT_MAX,
 };
 
 static void do_input_boost(struct work_struct *work)
