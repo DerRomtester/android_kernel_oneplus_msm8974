@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2012-2013 The Linux Foundation. All rights reserved.
+ * Copyright (c) 2012-2015 The Linux Foundation. All rights reserved.
  *
  * Previously licensed under the ISC license by Qualcomm Atheros, Inc.
  *
@@ -36,7 +36,7 @@
  *
  */
 
-#include "wniCfgSta.h"
+#include "wniCfg.h"
 #include "aniGlobal.h"
 #include "cfgApi.h"
 
@@ -171,10 +171,11 @@ void limRemovePBCSessions(tpAniSirGlobal pMac, tSirMacAddr pRemoveMac,tpPESessio
         if (vos_mem_compare((tANI_U8 *)pbc->addr,
                             (tANI_U8 *)pRemoveMac, sizeof(tSirMacAddr))) {
           prev->next = pbc->next;
-          if (pbc == psessionEntry->pAPWPSPBCSession)
+          if (pbc == psessionEntry->pAPWPSPBCSession) {
             psessionEntry->pAPWPSPBCSession = pbc->next;
             vos_mem_free(pbc);
             return;
+          }
         }
         prev = pbc;
         pbc = pbc->next;
@@ -550,7 +551,8 @@ limProcessProbeReqFrame(tpAniSirGlobal pMac, tANI_U8 *pRxPacketInfo,tpPESession 
                         pSirSmeProbeReq->sessionId = psessionEntry->smeSessionId;
                         vos_mem_copy(pSirSmeProbeReq->peerMacAddr, pHdr->sa, sizeof(tSirMacAddr));
                         pSirSmeProbeReq->devicePasswdId = probeReq.probeReqWscIeInfo.DevicePasswordID.id;
-                        MTRACE(macTraceMsgTx(pMac, psessionEntry->peSessionId, msgQ.type));
+                        MTRACE(macTrace(pMac, TRACE_CODE_TX_SME_MSG,
+                            psessionEntry->peSessionId, msgQ.type));
                        if (limSysProcessMmhMsgApi(pMac, &msgQ,  ePROT) != eSIR_SUCCESS){
                             PELOG3(limLog(pMac, LOG3, FL("couldnt send the probe req to wsm "));)
                         }
@@ -664,7 +666,7 @@ static void
 limIndicateProbeReqToHDD(tpAniSirGlobal pMac, tANI_U8 *pBd,
                          tpPESession psessionEntry)
 {
-    limLog( pMac, LOG1, "Received a probe request frame");
+    limLog( pMac, LOG1, FL("Received a probe request frame"));
 
     //send the probe req to SME.
     limSendSmeMgmtFrameInd( pMac, psessionEntry->smeSessionId, pBd,
@@ -795,7 +797,8 @@ limSendSmeProbeReqInd(tpAniSirGlobal pMac,
     vos_mem_copy(pSirSmeProbeReqInd->bssId, psessionEntry->bssId, sizeof(tSirMacAddr));
     vos_mem_copy(pSirSmeProbeReqInd->WPSPBCProbeReq.peerMacAddr, peerMacAddr, sizeof(tSirMacAddr));
 
-    MTRACE(macTraceMsgTx(pMac, psessionEntry->peSessionId, msgQ.type));
+    MTRACE(macTrace(pMac, TRACE_CODE_TX_SME_MSG, psessionEntry->peSessionId,
+                                                               msgQ.type));
     pSirSmeProbeReqInd->WPSPBCProbeReq.probeReqIELen = (tANI_U16)ProbeReqIELen;
     vos_mem_copy(pSirSmeProbeReqInd->WPSPBCProbeReq.probeReqIE, pProbeReqIE, ProbeReqIELen);
     

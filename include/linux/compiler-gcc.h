@@ -5,9 +5,9 @@
 /*
  * Common definitions for all gcc versions go here.
  */
-#define GCC_VERSION (__GNUC__ * 10000		\
-		     + __GNUC_MINOR__ * 100	\
-		     + __GNUC_PATCHLEVEL__)
+#define GCC_VERSION (__GNUC__ * 10000 \
+		   + __GNUC_MINOR__ * 100 \
+		   + __GNUC_PATCHLEVEL__)
 
 /* Optimization barrier */
 
@@ -114,13 +114,14 @@
  * would be.
  * [...]
  */
-#define __pure			__attribute__((pure))
-#define __aligned(x)		__attribute__((aligned(x)))
-#define __printf(a, b)		__attribute__((format(printf, a, b)))
-#define __scanf(a, b)		__attribute__((format(scanf, a, b)))
-#define __attribute_const__	__attribute__((__const__))
-#define __maybe_unused		__attribute__((unused))
-#define __always_unused		__attribute__((unused))
+#define __pure				__attribute__((pure))
+#define __aligned(x)			__attribute__((aligned(x)))
+#define __printf(a, b)			__attribute__((format(printf, a, b)))
+#define __scanf(a, b)			__attribute__((format(scanf, a, b)))
+#define  noinline			__attribute__((noinline))
+#define __attribute_const__		__attribute__((__const__))
+#define __maybe_unused			__attribute__((unused))
+#define __always_unused			__attribute__((unused))
 
 /* gcc version specific checks */
 
