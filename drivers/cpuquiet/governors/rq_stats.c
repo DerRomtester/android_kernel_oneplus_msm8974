@@ -23,8 +23,6 @@
 #include <linux/kthread.h>
 
 // from cpuquiet.c
-extern unsigned int cpq_max_cpus(void);
-extern unsigned int cpq_min_cpus(void);
 extern bool cpq_is_suspended(void);
 
 typedef enum {
