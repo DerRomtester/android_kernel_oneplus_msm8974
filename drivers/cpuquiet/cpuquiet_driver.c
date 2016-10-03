@@ -50,7 +50,7 @@ static bool log_hotplugging = false;
 	if (log_hotplugging) pr_info("[CPUQUIET]: " msg); \
 	} while (0)
 
-inline unsigned int num_cpu_check(unsigned int num)
+unsigned int num_cpu_check(unsigned int num)
 {
 	if (num > CONFIG_NR_CPUS)
 		return CONFIG_NR_CPUS;
