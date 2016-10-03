@@ -21,6 +21,7 @@
 #include <linux/cpu.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
+#include "../cpuquiet.h"
 
 // from cpuquiet.c
 extern bool cpq_is_suspended(void);
