@@ -24,6 +24,7 @@
 #include <linux/slab.h>
 #include <linux/cpu.h>
 #include <linux/sched.h>
+#include "../cpuquiet.h"
 
 typedef enum {
 	DISABLED,
