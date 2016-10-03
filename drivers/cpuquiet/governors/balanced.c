@@ -27,7 +27,7 @@
 #include <linux/sched.h>
 #include <linux/tick.h>
 #include <asm/cputime.h>
-
+#include "../cpuquiet.h"
 
 #define CPUNAMELEN 8
 
