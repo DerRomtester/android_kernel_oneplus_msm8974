@@ -3512,7 +3512,16 @@ get_prop_charge_full(struct qpnp_chg_chip *chip)
 }
 
 #ifdef CONFIG_VENDOR_EDIT
-/* yangfangbiao@oneplus.cn, 2014/12/27  Add for  sync with android 4.4  */
+static bool needs_soc_refresh(struct qpnp_chg_chip *chip, ktime_t now)
+{
+	if (!chip->last_soc_chk.tv64 ||
+		(ktime_to_ms(ktime_sub(now, chip->last_soc_chk)) >
+		(BATT_HEARTBEAT_INTERVAL - MSEC_PER_SEC)))
+		return true;
+
+	return false;
+}
+
 #define DEFAULT_CAPACITY	50
 #endif /*CONFIG_VENDOR_EDIT*/
 /* OPPO 2013-08-13 wangjc Modify begin for use fuel gauger. */
@@ -3574,10 +3583,8 @@ static int
 get_prop_capacity(struct qpnp_chg_chip *chip)
 {
 	if (qpnp_batt_gauge && qpnp_batt_gauge->get_battery_soc){
-		ktime_t now = ktime_get();
-		if (!chip->last_soc_chk.tv64 ||
-			(ktime_to_ms(ktime_sub(now, chip->last_soc_chk)) >
-			(BATT_HEARTBEAT_INTERVAL - MSEC_PER_SEC))) {
+		ktime_t now = ktime_get_boottime();
+		if (needs_soc_refresh(chip, now)) {
 			chip->old_soc = qpnp_batt_gauge->get_battery_soc();
 			chip->last_soc_chk = now;
 		}
@@ -8770,6 +8777,9 @@ static int qpnp_chg_resume(struct device *dev)
 		if (rc)
 			pr_debug("failed to force on VREF_BAT_THM rc=%d\n", rc);
 	}
+
+	if (needs_soc_refresh(chip, ktime_get_boottime()))
+		power_supply_changed(&chip->batt_psy);
 
 	return rc;
 }
