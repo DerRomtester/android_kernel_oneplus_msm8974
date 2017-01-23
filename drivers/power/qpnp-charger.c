@@ -52,6 +52,11 @@
 #include <linux/uaccess.h>//sjc20150105
 #endif
 
+void mcu_en_gpio_set(int value)
+{
+	return;
+}
+
 #ifdef CONFIG_VENDOR_EDIT
 /* zuoyonghua@oneplus.cn 2015-02-13 default close log */
 //#define DEBUG_QPNP_CHARGER
@@ -1193,6 +1198,7 @@ qpnp_chg_iusbmax_set(struct qpnp_chg_chip *chip, int mA)
 {
 	int rc = 0;
 	u8 usb_reg = 0, temp = 8;
+
 	if (mA < 0 || mA > QPNP_CHG_I_MAX_MAX_MA) {
 		pr_err("bad mA=%d asked to set\n", mA);
 		return -EINVAL;
@@ -2973,7 +2979,6 @@ static enum power_supply_property msm_batt_power_props[] = {
 	POWER_SUPPLY_PROP_VOLTAGE_MIN_DESIGN,
 	POWER_SUPPLY_PROP_VOLTAGE_NOW,
 	POWER_SUPPLY_PROP_CAPACITY,
-	POWER_SUPPLY_PROP_POWER_NOW,
 	POWER_SUPPLY_PROP_CURRENT_NOW,
 	POWER_SUPPLY_PROP_INPUT_CURRENT_MAX,
 	POWER_SUPPLY_PROP_INPUT_CURRENT_TRIM,
@@ -3504,16 +3509,6 @@ get_prop_charge_full(struct qpnp_chg_chip *chip)
 	return 0;
 }
 
-static bool needs_soc_refresh(struct qpnp_chg_chip *chip, ktime_t now)
-{
-	if (!chip->last_soc_chk.tv64 ||
-		(ktime_to_ms(ktime_sub(now, chip->last_soc_chk)) >
-		(BATT_HEARTBEAT_INTERVAL - MSEC_PER_SEC)))
-		return true;
-
-	return false;
-}
-
 #define DEFAULT_CAPACITY	50
 /* OPPO 2013-08-13 wangjc Modify begin for use fuel gauger. */
 #ifndef CONFIG_BATTERY_BQ27541
@@ -3577,8 +3572,10 @@ get_prop_capacity(struct qpnp_chg_chip *chip)
 		return chip->fake_battery_soc;
 
 	if (qpnp_batt_gauge && qpnp_batt_gauge->get_battery_soc){
-		ktime_t now = ktime_get_boottime();
-		if (needs_soc_refresh(chip, now)) {
+		ktime_t now = ktime_get();
+		if (!chip->last_soc_chk.tv64 ||
+			(ktime_to_ms(ktime_sub(now, chip->last_soc_chk)) >
+			(BATT_HEARTBEAT_INTERVAL - MSEC_PER_SEC))) {
 			chip->old_soc = qpnp_batt_gauge->get_battery_soc();
 			chip->last_soc_chk = now;
 		}
@@ -3683,7 +3680,7 @@ static int qpnp_start_charging(struct qpnp_chg_chip *chip);
 
 #ifdef CONFIG_PIC1503_FASTCG
 //Fuchun.Liao@EXP.Driver,2014/02/11,add for display fastchg icon quickly
-void switch_fast_chg(struct qpnp_chg_chip *chip);
+static void switch_fast_chg(struct qpnp_chg_chip *chip);
 #endif
 
 static void
@@ -3897,14 +3894,6 @@ qpnp_batt_power_get_property(struct power_supply *psy,
 		break;
 	case POWER_SUPPLY_PROP_CAPACITY:
 		val->intval = get_prop_capacity(chip);
-		break;
-	case POWER_SUPPLY_PROP_POWER_NOW:
-		{
-			int mA, mV;
-			mA = get_prop_current_now(chip);
-			mV = get_prop_battery_voltage_now(chip) / 1000;
-			val->intval = (mA * mV) / 1000;
-		}
 		break;
 	case POWER_SUPPLY_PROP_CURRENT_NOW:
 		val->intval = get_prop_current_now(chip);
@@ -7791,7 +7780,7 @@ bool is_alow_fast_chg(struct qpnp_chg_chip *chip)
 #define AP_SWITCH_USB	GPIO_CFG(96, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_DOWN, GPIO_CFG_2MA)
 #define AP_SWITCH_FAST	GPIO_CFG(96, 0, GPIO_CFG_OUTPUT, GPIO_CFG_PULL_UP, GPIO_CFG_2MA)
 
-void switch_fast_chg(struct qpnp_chg_chip *chip)
+static void switch_fast_chg(struct qpnp_chg_chip *chip)
 {
 
 	int ret = 0;
@@ -7881,14 +7870,14 @@ static void update_heartbeat(struct work_struct *work)
 
 #ifdef CONFIG_BQ24196_CHARGER
 /*OPPO 2013-10-19 liaofuchun add for bq24196 stop charging*/
-void qpnp_start_charge(struct work_struct *work)
+static void qpnp_start_charge(struct work_struct *work)
 {
 	struct qpnp_chg_chip *chip = container_of(work,
 		struct qpnp_chg_chip,start_charge_work);
 	
 	qpnp_chg_charge_en(chip, 1);
 }
-void qpnp_stop_charge(struct work_struct *work)
+static void qpnp_stop_charge(struct work_struct *work)
 {
 	struct qpnp_chg_chip *chip = container_of(work,
 		struct qpnp_chg_chip,stop_charge_work);
@@ -8755,9 +8744,6 @@ static int qpnp_chg_resume(struct device *dev)
 		if (rc)
 			pr_debug("failed to force on VREF_BAT_THM rc=%d\n", rc);
 	}
-
-	if (needs_soc_refresh(chip, ktime_get_boottime()))
-		power_supply_changed(&chip->batt_psy);
 
 	return rc;
 }
