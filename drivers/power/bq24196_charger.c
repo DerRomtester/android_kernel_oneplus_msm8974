@@ -59,6 +59,11 @@ struct bq24196_device_info {
 struct bq24196_device_info *bq24196_di;
 struct i2c_client *bq24196_client;
 
+/* Ensure I2C bus is active for OTG */
+static bool suspended = false;
+static DECLARE_COMPLETION(resume_done);
+static DEFINE_SPINLOCK(resume_lock);
+
 static int bq24196_read_i2c(struct bq24196_device_info *di,u8 reg,u8 length,char *buf)
 {
 	struct i2c_client *client = di->client;
@@ -82,7 +87,7 @@ static int bq24196_write_i2c(struct bq24196_device_info *di,u8 reg,u8 length,cha
 
 	if (atomic_read(&di->suspended) == 1) //sjc1118
 		return -1;
-
+	
 	mutex_lock(&bq24196_di->i2c_lock);
 	retval = i2c_smbus_write_i2c_block_data(client,reg,length,&buf[0]);
 	mutex_unlock(&bq24196_di->i2c_lock);
@@ -106,7 +111,7 @@ bq24196_chg_masked_write(struct bq24196_device_info *di, u8 reg,
 {
 	int rc;
 	char buf[1]={0x0};
-
+	
 	rc = bq24196_read(di,reg,length,&buf[0]);
 	if ( rc < 0 ){
 		pr_err("bq24196 read i2c failed,reg_addr=0x%x,rc=%d\n",reg,rc);
@@ -136,7 +141,7 @@ bq24196_ibatmax_set(struct bq24196_device_info *di, int chg_current)
 		return bq24196_chg_masked_write(di,CHARGE_CURRENT_CTRL,BQ24196_IBATMAX_BITS,value,1);
 	} 
 #ifdef CONFIG_VENDOR_EDIT
-       /* yangfangbiao@oneplus.cn, 2015/02/25	set charge current 300ma  */
+       /* yangfangbiao@oneplus.cn, 2015/03/15	set charge current 300ma  */
 	else if(chg_current == 300) {
 		value = (1536 - BQ24196_CHG_IBATMAX_MIN)/64;
 		value <<= 2;
@@ -162,7 +167,7 @@ bq24196_ibatmax_set(struct bq24196_device_info *di, int chg_current)
 			chg_current = BQ24196_CHG_IBATMAX_HRM;
 		}
 #endif /*CONFIG_VENDOR_EDIT*/
-
+		
 
 		value = (chg_current - BQ24196_CHG_IBATMAX_MIN)/64;
 		value <<= 2;
@@ -222,7 +227,7 @@ static int
 bq24196_vbatdet_set(struct bq24196_device_info *di, int vbatdet)
 {
 	u8 value = 0;
-
+	
 	if( vbatdet == 100 ){
 		value = 0x0;
 	}
@@ -230,10 +235,9 @@ bq24196_vbatdet_set(struct bq24196_device_info *di, int vbatdet)
 		value = 0x1;
 	}
 	else{
-	/* yangfangbiao@oneplus.cn, 2015/03/11  vbatdetdefault to 100mv  */
 		value = 0x0;
 		pr_err("bad vbatdet:%d,default to 100mv\n",vbatdet);
-
+		
 	}
 	return bq24196_chg_masked_write(di,CHARGE_VOL_CTRL,BQ24196_VBATDET_BITS,value,1);
 }
@@ -247,13 +251,13 @@ bq24196_vddmax_set(struct bq24196_device_info *di, int voltage)
 {
 	u8 value = 0;
 	pr_info("%s voltage:%d\n",__func__,voltage);
-
+	
 	if (voltage < BQ24196_CHG_VDDMAX_MIN
 			|| voltage > BQ24196_CHG_VDDMAX_MAX) {
 		pr_err("bad vddmax mV=%d asked to set\n", voltage);
 		return -EINVAL;
 	}
-
+		
 	value = (voltage - BQ24196_CHG_VDDMAX_MIN)/16;
 	value <<= 2;
 
@@ -366,7 +370,7 @@ bq24196_get_charge_en(struct bq24196_device_info *di)
 {
 	char value_buf;
 	int rc;
-
+		
 	rc = bq24196_read(di,POWER_ON_CONF,1,&value_buf);
 	if(rc < 0) {
 		pr_err("read charge en status fail\n");
@@ -397,7 +401,7 @@ static int bq24196_get_system_status(struct bq24196_device_info *di)
 {
 	char value_buf;
 	int rc;
-
+		
 	rc = bq24196_read(di,SYS_STS,1,&value_buf);
 	if(rc < 0) {
 		pr_err("read system status fail\n");
@@ -509,7 +513,7 @@ static int bq24196_probe(struct i2c_client *client, const struct i2c_device_id *
 	struct bq24196_access_methods *bus;
 	int num;
 	int retval = 0;
-
+	
 	printk("lfc bq24196_probe\n");
 	if(!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
 		printk("lfc bq24196_probe,i2c_func error\n");
@@ -522,7 +526,7 @@ static int bq24196_probe(struct i2c_client *client, const struct i2c_device_id *
 	retval = idr_get_new(&bq24196_charger_id, client, &num);
 	if (retval < 0)
 		return retval;
-
+	
 	name = kasprintf(GFP_KERNEL, "%s-%d", id->name, num);
 	if (!name) {
 		dev_err(&client->dev, "failed to allocate device name\n");
@@ -545,7 +549,7 @@ static int bq24196_probe(struct i2c_client *client, const struct i2c_device_id *
 		retval = -ENOMEM;
 		goto bq24196_chg_failed_3;
 	}
-
+	
 	i2c_set_clientdata(client, di);
 	di->dev = &client->dev;
 	bus->read = &bq24196_read_i2c;
@@ -557,9 +561,9 @@ static int bq24196_probe(struct i2c_client *client, const struct i2c_device_id *
 	atomic_set(&di->suspended, 0); //sjc1118
 	mutex_init(&di->i2c_lock);
 	bq24196_hw_config_init(di);
-
+	
 	return 0;
-
+	
 err_check_functionality_failed:
 	printk("lfc bq24196_probe fail\n");
 	return 0;
@@ -572,7 +576,7 @@ bq24196_chg_failed_1:
 	idr_remove(&bq24196_charger_id,num);
 	return retval;	
 }
-
+    
 
 static int bq24196_remove(struct i2c_client *client)
 {
@@ -592,10 +596,39 @@ static const struct i2c_device_id bq24196_id[] = {
 };
 MODULE_DEVICE_TABLE(i2c, bq24196_id);
 
+static void bq24196_suspended(bool state)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&resume_lock, flags);
+	suspended = state;
+	spin_unlock_irqrestore(&resume_lock, flags);
+
+	if (!suspended)
+		complete_all(&resume_done);
+}
+
+void bq24196_wait_for_resume(void)
+{
+	unsigned long flags;
+	bool asleep;
+
+	spin_lock_irqsave(&resume_lock, flags);
+	asleep = suspended;
+	spin_unlock_irqrestore(&resume_lock, flags);
+
+	if (asleep) {
+		INIT_COMPLETION(resume_done);
+		wait_for_completion_timeout(&resume_done,
+					msecs_to_jiffies(50));
+	}
+}
+
 static int bq24196_suspend(struct device *dev) //sjc1118
 {
 	struct bq24196_device_info *chip = dev_get_drvdata(dev);
 
+	bq24196_suspended(true);
 	atomic_set(&chip->suspended, 1);
 
 	return 0;
@@ -606,6 +639,7 @@ static int bq24196_resume(struct device *dev) //sjc1118
 	struct bq24196_device_info *chip = dev_get_drvdata(dev);
 
 	atomic_set(&chip->suspended, 0);
+	bq24196_suspended(false);
 
 	return 0;
 }

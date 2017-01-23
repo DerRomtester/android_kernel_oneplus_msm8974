@@ -47,7 +47,7 @@ struct qpnp_battery_gauge {
 	int (*get_battery_soc) (void);
 	int (*get_average_current) (void);
 	int (*is_battery_authenticated) (void);//wangjc add for authentication
-	int (*get_batt_cc) (void);
+	int (*get_batt_cc) (void);/* yangfangbiao@oneplus.cn, 2015/02/13  Add fcc interface */
 	int (*get_batt_fcc) (void);  /* yangfangbiao@oneplus.cn, 2015/01/06  Modify for  sync with KK charge standard  */
 	//lfc add for fastchg
 	int	(*fast_chg_started) (void);
@@ -86,5 +86,6 @@ void qpnp_battery_gauge_unregister(struct qpnp_battery_gauge *batt_gauge);
 void qpnp_external_charger_register(struct qpnp_external_charger *external_charger);
 void qpnp_external_charger_unregister(struct qpnp_external_charger *external_charger);
 
+int qpnp_get_charging_status(void);
 
 #endif /* __QPNP_CHARGER_H__ */
