@@ -22,7 +22,6 @@
 #include <linux/msm_thermal.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
-#include <linux/ratelimit.h>
 
 unsigned int temp_threshold = 42;
 module_param(temp_threshold, int, 0644);
@@ -56,23 +55,11 @@ enum threshold_levels {
 	LEVEL_HOT		= 2,
 };
 
-static struct qpnp_vadc_chip *vadc_dev;
-static enum qpnp_vadc_channels adc_chan;
+struct qpnp_vadc_chip *vadc_dev;
+enum qpnp_vadc_channels adc_chan;
 
 static struct delayed_work check_temp_work;
 static struct workqueue_struct *thermal_wq;
-
-static void cpu_offline_wrapper(int cpu)
-{
-        if (cpu_online(cpu))
-		cpu_down(cpu);
-}
-
-static void __ref cpu_online_wrapper(int cpu)
-{
-        if (!cpu_online(cpu))
-		cpu_up(cpu);
-}
 
 static int msm_thermal_cpufreq_callback(struct notifier_block *nfb,
 		unsigned long event, void *data)
@@ -102,29 +89,13 @@ static void limit_cpu_freqs(uint32_t max_freq)
 	info.limited_max_freq = max_freq;
 	info.pending_change = true;
 
-	pr_info_ratelimited("%s: Setting cpu max frequency to %u\n",
-		KBUILD_MODNAME, max_freq);
-
-	if (num_online_cpus() < NR_CPUS) {
-		if (max_freq > FREQ_NOTE_7)
-			cpu_online_wrapper(1);
-		if (max_freq > FREQ_HELL)
-			cpu_online_wrapper(2);
-		if (max_freq > FREQ_VERY_HOT)
-			cpu_online_wrapper(3);
-	}
-
 	get_online_cpus();
-	for_each_online_cpu(cpu)
+	for_each_online_cpu(cpu) {
 		cpufreq_update_policy(cpu);
+		pr_info("%s: Setting cpu%d max frequency to %d\n",
+				KBUILD_MODNAME, cpu, info.limited_max_freq);
+	}
 	put_online_cpus();
-
-	if (max_freq == FREQ_VERY_HOT)
-		cpu_offline_wrapper(3);
-	else if (max_freq == FREQ_HELL)
-		cpu_offline_wrapper(2);
-	else if (max_freq == FREQ_NOTE_7)
-		cpu_offline_wrapper(1);
 
 	info.pending_change = false;
 }
@@ -165,8 +136,7 @@ static void check_temp(struct work_struct *work)
 	}
 
 reschedule:
-	queue_delayed_work(system_power_efficient_wq,
-                &check_temp_work, msecs_to_jiffies(250));
+	queue_delayed_work(thermal_wq, &check_temp_work, msecs_to_jiffies(250));
 }
 
 static int __devinit msm_thermal_dev_probe(struct platform_device *pdev)
@@ -183,11 +153,11 @@ static int __devinit msm_thermal_dev_probe(struct platform_device *pdev)
 	ret = cpufreq_register_notifier(&msm_thermal_cpufreq_notifier,
 		CPUFREQ_POLICY_NOTIFIER);
 	if (ret)
-		pr_err("thermals: Adam ruins everything\n");
+		pr_err("thermals: well, if this fails here, we're fucked\n");
 
 	thermal_wq = alloc_workqueue("thermal_wq", WQ_HIGHPRI, 0);
 	if (!thermal_wq) {
-		pr_err("thermals: don't worry, if this fails we're also fucked\n");
+		pr_err("thermals: don't worry, if this fails we're also bananas\n");
 		goto err;
 	}
 
@@ -232,5 +202,5 @@ static void __exit msm_thermal_device_exit(void)
 	platform_driver_unregister(&msm_thermal_device_driver);
 }
 
-arch_initcall(msm_thermal_device_init);
+late_initcall(msm_thermal_device_init);
 module_exit(msm_thermal_device_exit);
