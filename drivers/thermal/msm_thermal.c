@@ -22,8 +22,9 @@
 #include <linux/msm_thermal.h>
 #include <linux/platform_device.h>
 #include <linux/of.h>
+#include <mach/cpufreq.h>
 
-unsigned int temp_threshold = 42;
+unsigned int temp_threshold = 40;
 module_param(temp_threshold, int, 0644);
 
 static struct thermal_info {
