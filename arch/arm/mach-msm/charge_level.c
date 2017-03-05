@@ -25,7 +25,7 @@
 static ssize_t charge_level_ac_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	// print current value
-	return sprintf(buf, "%d", ac_level);
+	return sprintf(buf, "%d mA", ac_level);
 }
 
 
@@ -57,7 +57,7 @@ static ssize_t charge_level_ac_store(struct kobject *kobj, struct kobj_attribute
 static ssize_t charge_level_usb_show(struct kobject *kobj, struct kobj_attribute *attr, char *buf)
 {
 	// print current value
-	return sprintf(buf, "%d", usb_level);
+	return sprintf(buf, "%d mA", usb_level);
 }
 
 
@@ -94,10 +94,12 @@ static ssize_t charge_info_show(struct kobject *kobj, struct kobj_attribute *att
 
 	// stock charge logic
 	if (charge_level == 0)
-		return sprintf(buf, "%d", charge_info_level_cur);
+		return sprintf(buf, "%s / %d mA (%d) SL", 
+				charge_info_text, charge_info_level_cur, charge_info_level_req);
 
 	// non-stock charge logic
-		return sprintf(buf, "%d", charge_info_level_cur);
+		return sprintf(buf, "%s / %d mA (%d)", 
+			charge_info_text, charge_info_level_cur, charge_info_level_req);
 }
 
 
