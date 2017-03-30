@@ -36,7 +36,7 @@ static bool manual_hotplug = false;
 // core 0 is always active
 unsigned int cpu_core_state[3] = {0, 0, 0};
 		
-unsigned int min_cpus = 1;
+unsigned int min_cpus = 2;
 unsigned int max_cpus = CONFIG_NR_CPUS;
 
 #define DEFAULT_SCREEN_OFF_CPU_CAP 2
