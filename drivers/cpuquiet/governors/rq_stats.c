@@ -21,6 +21,7 @@
 #include <linux/cpu.h>
 #include <linux/sched.h>
 #include <linux/kthread.h>
+#include "../cpuquiet.h"
 
 // from cpuquiet.c
 extern unsigned int cpq_max_cpus(void);
