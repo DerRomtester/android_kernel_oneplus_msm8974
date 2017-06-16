@@ -1191,7 +1191,7 @@ int sps_bam_pipe_set_params(struct sps_bam *dev, u32 pipe_index, u32 options)
 							GFP_KERNEL);
 			}
 			if (pipe->sys.desc_cache == NULL) {
-				SPS_ERR("sps:No memory for pipe%d of BAM %pa\n",
+				SPS_ERR("sps:No memory for pipe%d of BAM 0x%x\n",
 						pipe_index, BAM_ID(dev));
 				return -ENOMEM;
 			}
@@ -1200,9 +1200,8 @@ int sps_bam_pipe_set_params(struct sps_bam *dev, u32 pipe_index, u32 options)
 				vmalloc(pipe->desc_size + size);
 
 			if (pipe->sys.desc_cache == NULL) {
-				SPS_ERR(
-					"sps:No memory for pipe %d of BAM %pa\n",
-					pipe_index, BAM_ID(dev));
+				SPS_ERR("sps:No memory for pipe %d of BAM 0x%x\n",
+						pipe_index, BAM_ID(dev));
 				return -ENOMEM;
 			}
 

@@ -440,9 +440,7 @@ static ssize_t devkmsg_read(struct file *file, char __user *buf,
 	if (!user)
 		return -EBADF;
 
-	ret = mutex_lock_interruptible(&user->lock);
-	if (ret)
-		return ret;
+	mutex_lock(&user->lock);
 	raw_spin_lock_irq(&logbuf_lock);
 	while (user->seq == log_next_seq) {
 		if (file->f_flags & O_NONBLOCK) {
