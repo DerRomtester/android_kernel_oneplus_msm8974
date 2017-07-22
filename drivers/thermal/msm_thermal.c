@@ -23,12 +23,12 @@
 #include <linux/platform_device.h>
 #include <linux/of.h>
 
-/* Throttle CPU when reaches temp threshold*/
-unsigned int temp_threshold = 41;
+/* Throttle CPU when reaches a certain tempertature*/
+unsigned int temp_threshold = 42;
 module_param(temp_threshold, int, 0644);
 
-/* check every 2 seconds for the CPU temperature */
-unsigned int temp_scan_interval = 2000;
+/* check every 0.5 seconds for the CPU temperature */
+unsigned int temp_scan_interval = 500;
 module_param(temp_scan_interval, int, 0644);
 
 static struct thermal_info {
@@ -46,24 +46,16 @@ static struct thermal_info {
 };
 
 enum thermal_freqs {
-	FREQ_7		= 729600,
-	FREQ_6		= 960000,	
-	FREQ_5		= 1036800,
-	FREQ_4		= 1190400,
-	FREQ_3		= 1497600,
-	FREQ_2		= 1728000,
-	FREQ_1		= 1958400,
-	FREQ_0		= 2265600,
+	FREQ_HELL		= 652800,
+	FREQ_VERY_HOT		= 960000,
+	FREQ_HOT		= 1574400,
+	FREQ_WARM		= 1958400,
 };
 
 enum threshold_levels {
-	LEVEL_6		= 30,
-	LEVEL_5		= 24, 
-	LEVEL_4		= 19, 
-	LEVEL_3		= 14, 
-	LEVEL_2		= 9,
-	LEVEL_1		= 6,  
-	LEVEL_0		= 3,  
+	LEVEL_HELL		= 1 << 4,
+	LEVEL_VERY_HOT		= 1 << 3,
+	LEVEL_HOT		= 1 << 2,
 };
 
 struct qpnp_vadc_chip *vadc_dev;
@@ -137,22 +129,14 @@ static void check_temp(struct work_struct *work)
 		}
 	}
 
-	if (temp >= temp_threshold + LEVEL_6)
-		freq = FREQ_7;
-	else if (temp >= temp_threshold + LEVEL_5)
-		freq = FREQ_6;
-	else if (temp >= temp_threshold + LEVEL_4)
-		freq = FREQ_5;
-	else if (temp >= temp_threshold + LEVEL_3)
-		freq = FREQ_4;
-	else if (temp >= temp_threshold + LEVEL_2)
-		freq = FREQ_3;
-	else if (temp >= temp_threshold + LEVEL_1)
-		freq = FREQ_2;
-	else if (temp >= temp_threshold + LEVEL_0)
-		freq = FREQ_1;
-	else if (temp >= temp_threshold)
-		freq = FREQ_0;
+	if (temp >= temp_threshold + LEVEL_HELL)
+		freq = FREQ_HELL;
+	else if (temp >= temp_threshold + LEVEL_VERY_HOT)
+		freq = FREQ_VERY_HOT;
+	else if (temp >= temp_threshold + LEVEL_HOT)
+		freq = FREQ_HOT;
+	else if (temp > temp_threshold)
+		freq = FREQ_WARM;
 
 	if (freq)
 	{
