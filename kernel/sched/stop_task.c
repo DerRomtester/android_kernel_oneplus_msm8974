@@ -36,7 +36,7 @@ static struct task_struct *pick_next_task_stop(struct rq *rq)
 static void
 enqueue_task_stop(struct rq *rq, struct task_struct *p, int flags)
 {
-	__inc_nr_running(rq);
+	inc_nr_running(rq);
 }
 
 static void
