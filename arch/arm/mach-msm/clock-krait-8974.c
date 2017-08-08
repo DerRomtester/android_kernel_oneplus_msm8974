@@ -789,20 +789,6 @@ static int clock_krait_8974_driver_probe(struct platform_device *pdev)
 		}
 	}
 
-#ifdef CONFIG_MACH_MSM8974_14001
-	/* Underclock for better UX */
-	if (!no_cpu_underclock) {
-		while (rows--) {
-			if (freq[rows - 1] == UNDERCLOCKED_MAXFREQ_HZ)
-				break;
-			if (freq[rows - 1] < UNDERCLOCKED_MAXFREQ_HZ) {
-				rows++;
-				break;
-			}
-		}
-	}
-#endif
-
 	krait_update_uv(uv, rows, pvs ? 25000 : 0);
 
 	if (clk_init_vdd_class(dev, &krait0_clk.c, rows, freq, uv, ua))
