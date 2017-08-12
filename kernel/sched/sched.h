@@ -1006,11 +1006,6 @@ static inline void inc_nr_running(struct rq *rq)
 	rq->ave_nr_running = do_avg_nr_running(rq);
 	rq->nr_last_stamp = rq->clock_task;
 	rq->nr_running++;
-
-	if (rq->nr_running >= 2) {
-		if (!rq->rd->overload)
-			rq->rd->overload = true;
-	}
 	write_seqcount_end(&rq->ave_seqcnt);
 }
 
